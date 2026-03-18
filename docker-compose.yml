@@ -1,0 +1,57 @@
+services:
+  core-api:
+    build:
+      context: ./core-api
+    container_name: core-api
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - redis
+
+  edge-api:
+    build:
+      context: ./edge-api
+    container_name: edge-api
+    environment:
+      - PORT=3000
+      - CORE_API_URL=http://core-api:8080
+      - SPOTIFY_CLIENT_ID=replace-me
+      - SPOTIFY_REDIRECT_URI=http://localhost:3000/auth/spotify/callback
+    ports:
+      - "3000:3000"
+    depends_on:
+      - core-api
+
+  postgres:
+    image: postgres:16
+    container_name: spotify-postgres
+    environment:
+      POSTGRES_USER: spotify
+      POSTGRES_PASSWORD: spotify
+      POSTGRES_DB: spotify_analytics
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    container_name: spotify-redis
+    ports:
+      - "6379:6379"
+
+  otel-collector:
+    image: otel/opentelemetry-collector:0.111.0
+    container_name: otel-collector
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./observability/otel-collector-config.yaml:/etc/otelcol/config.yaml
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+
+volumes:
+  pgdata:

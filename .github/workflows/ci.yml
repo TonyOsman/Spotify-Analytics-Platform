@@ -1,0 +1,43 @@
+name: platform-ci
+
+on:
+  push:
+    paths:
+      - "core-api/**"
+      - "edge-api/**"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    paths:
+      - "core-api/**"
+      - "edge-api/**"
+      - ".github/workflows/ci.yml"
+
+jobs:
+  core-api-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Build core-api
+        working-directory: core-api
+        run: mvn -B -ntp verify
+
+  edge-api-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: edge-api/package.json
+      - name: Install deps
+        working-directory: edge-api
+        run: npm install
+      - name: Build edge-api
+        working-directory: edge-api
+        run: npm run build
