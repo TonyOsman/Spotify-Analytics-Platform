@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { edgeGet } from "../../lib/api";
 
 export default function PlaylistsPage() {
-  const [items, setItems] = useState<unknown>(null);
+  const [items, setItems] = useState<Record<string, unknown> | null>(null);
   const [status, setStatus] = useState("loading");
   const [error, setError] = useState("");
 
@@ -26,8 +26,8 @@ export default function PlaylistsPage() {
       <h2>Playlists</h2>
       {status === "loading" && <div className="status loading">Loading playlists...</div>}
       {status === "error" && <div className="status error">{error}</div>}
-      {status === "ok" && items && <pre>{JSON.stringify(items, null, 2)}</pre>}
-      {status === "ok" && !items && <div className="status empty">No playlists yet.</div>}
+      {status === "ok" && items !== null && <pre>{JSON.stringify(items, null, 2)}</pre>}
+      {status === "ok" && items === null && <div className="status empty">No playlists yet.</div>}
     </div>
   );
 }

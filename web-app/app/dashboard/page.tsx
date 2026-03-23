@@ -26,8 +26,8 @@ export default function DashboardPage() {
       <h2>Dashboard</h2>
       {status === "loading" && <div className="status loading">Loading summary...</div>}
       {status === "error" && <div className="status error">{error}</div>}
-      {status === "ok" && data && <pre>{JSON.stringify(data, null, 2)}</pre>}
-      {status === "ok" && !data && <div className="status empty">No data.</div>}
+      {status === "ok" && data !== null && <pre>{JSON.stringify(data, null, 2)}</pre>}
+      {status === "ok" && data === null && <div className="status empty">No data.</div>}
     </div>
   );
 }

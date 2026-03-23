@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { edgeGet } from "../../lib/api";
 
 export default function AnalyticsPage() {
-  const [top, setTop] = useState<unknown>(null);
+  const [top, setTop] = useState<Record<string, unknown> | null>(null);
   const [status, setStatus] = useState("loading");
   const [error, setError] = useState("");
 
@@ -26,8 +26,8 @@ export default function AnalyticsPage() {
       <h2>Analytics</h2>
       {status === "loading" && <div className="status loading">Loading analytics...</div>}
       {status === "error" && <div className="status error">{error}</div>}
-      {status === "ok" && top && <pre>{JSON.stringify(top, null, 2)}</pre>}
-      {status === "ok" && !top && <div className="status empty">No analytics yet.</div>}
+      {status === "ok" && top !== null && <pre>{JSON.stringify(top, null, 2)}</pre>}
+      {status === "ok" && top === null && <div className="status empty">No analytics yet.</div>}
     </div>
   );
 }
