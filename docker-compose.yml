@@ -1,10 +1,27 @@
 services:
+  web-app:
+    build:
+      context: ./web-app
+    container_name: web-app
+    environment:
+      - NEXT_PUBLIC_EDGE_API_URL=http://localhost:3000
+    ports:
+      - "4000:4000"
+    depends_on:
+      - edge-api
+
   core-api:
     build:
       context: ./core-api
     container_name: core-api
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      - DB_URL=jdbc:postgresql://postgres:5432/spotify_analytics
+      - DB_USERNAME=spotify
+      - DB_PASSWORD=spotify
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - TOKEN_SECRET=local-dev-change-me
     ports:
       - "8080:8080"
     depends_on:
@@ -18,8 +35,10 @@ services:
     environment:
       - PORT=3000
       - CORE_API_URL=http://core-api:8080
+      - SESSION_SECRET=local-dev-session-secret
       - SPOTIFY_CLIENT_ID=replace-me
       - SPOTIFY_REDIRECT_URI=http://localhost:3000/auth/spotify/callback
+      - OIDC_REDIRECT_URI=http://localhost:3000/auth/session/callback
     ports:
       - "3000:3000"
     depends_on:

@@ -10,3 +10,19 @@ management:
 springdoc:
   swagger-ui:
     path: /swagger-ui
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/spotify_analytics}
+    username: ${DB_USERNAME:spotify}
+    password: ${DB_PASSWORD:spotify}
+  flyway:
+    enabled: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+app:
+  token:
+    secret: ${TOKEN_SECRET:local-dev-change-me}

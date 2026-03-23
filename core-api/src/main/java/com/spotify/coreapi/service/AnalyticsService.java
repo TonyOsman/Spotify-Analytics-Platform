@@ -1,108 +1,121 @@
 package com.spotify.coreapi.service;
 
-import com.spotify.coreapi.domain.Artist;
+import com.spotify.coreapi.analytics.AnalyticsCalculator;
 import com.spotify.coreapi.domain.Playlist;
 import com.spotify.coreapi.domain.Track;
 import com.spotify.coreapi.domain.UserProfile;
-import java.util.ArrayList;
-import java.util.Comparator;
+import com.spotify.coreapi.repository.MusicRepository;
+import com.spotify.coreapi.repository.UserRepository;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
 public class AnalyticsService {
-    private final Map<String, UserProfile> profiles = new ConcurrentHashMap<>();
-    private final Map<String, List<Track>> topTracks = new ConcurrentHashMap<>();
-    private final Map<String, List<Playlist>> playlists = new ConcurrentHashMap<>();
+    private final UserRepository userRepository;
+    private final MusicRepository musicRepository;
+    private final AnalyticsCalculator analyticsCalculator;
+    private final StringRedisTemplate redisTemplate;
+
+    public AnalyticsService(
+        UserRepository userRepository,
+        MusicRepository musicRepository,
+        AnalyticsCalculator analyticsCalculator,
+        StringRedisTemplate redisTemplate
+    ) {
+        this.userRepository = userRepository;
+        this.musicRepository = musicRepository;
+        this.analyticsCalculator = analyticsCalculator;
+        this.redisTemplate = redisTemplate;
+    }
 
     public void saveProfile(UserProfile profile) {
-        profiles.put(profile.userId(), profile);
+        userRepository.upsert(profile);
+        invalidateCache(profile.userId());
     }
 
     public void saveTopTracks(String userId, List<Track> tracks) {
-        topTracks.put(userId, tracks);
+        userRepository.findById(userId).orElseGet(() -> {
+            UserProfile profile = new UserProfile(userId, userId, null);
+            userRepository.upsert(profile);
+            return profile;
+        });
+        musicRepository.upsertTracks(userId, tracks);
+        invalidateCache(userId);
     }
 
     public void savePlaylists(String userId, List<Playlist> values) {
-        playlists.put(userId, values);
+        userRepository.findById(userId).orElseGet(() -> {
+            UserProfile profile = new UserProfile(userId, userId, null);
+            userRepository.upsert(profile);
+            return profile;
+        });
+        musicRepository.upsertPlaylists(userId, values);
+        invalidateCache(userId);
     }
 
     public Map<String, Object> summary(String userId) {
+        String key = "summary:" + userId;
+        try {
+            String cached = redisTemplate.opsForValue().get(key);
+            if (cached != null) {
+                String[] parts = cached.split("\\|");
+                if (parts.length == 3) {
+                    return Map.of(
+                        "userId", userId,
+                        "topTrackCount", Integer.parseInt(parts[0]),
+                        "playlistCount", Integer.parseInt(parts[1]),
+                        "diversityScore", Double.parseDouble(parts[2])
+                    );
+                }
+            }
+        } catch (Exception ignored) {
+        }
+
+        List<Track> tracks = getTopTracks(userId);
+        List<Playlist> playlists = getPlaylists(userId);
+        double diversityScore = analyticsCalculator.diversityScore(analyticsCalculator.genreDistribution(tracks));
         Map<String, Object> payload = new HashMap<>();
-        payload.put("user", profiles.get(userId));
-        payload.put("topTrackCount", topTracks.getOrDefault(userId, List.of()).size());
-        payload.put("playlistCount", playlists.getOrDefault(userId, List.of()).size());
-        payload.put("diversityScore", diversityScore(userId));
+        payload.put("user", userRepository.findById(userId).orElse(null));
+        payload.put("topTrackCount", tracks.size());
+        payload.put("playlistCount", playlists.size());
+        payload.put("diversityScore", diversityScore);
+
+        try {
+            String compact = tracks.size() + "|" + playlists.size() + "|" + diversityScore;
+            redisTemplate.opsForValue().set(key, compact, Duration.ofMinutes(3));
+        } catch (Exception ignored) {
+        }
         return payload;
     }
 
     public List<Track> getTopTracks(String userId) {
-        return topTracks.getOrDefault(userId, List.of());
+        return musicRepository.getTracks(userId);
     }
 
     public List<Playlist> getPlaylists(String userId) {
-        return playlists.getOrDefault(userId, List.of());
+        return musicRepository.getPlaylists(userId);
     }
 
     public Map<String, Double> genreDistribution(String userId) {
-        List<Track> tracks = topTracks.getOrDefault(userId, List.of());
-        Map<String, Integer> raw = new HashMap<>();
-        int total = 0;
-        for (Track track : tracks) {
-            for (Artist artist : track.artists()) {
-                for (String genre : artist.genres()) {
-                    if (genre == null || genre.isBlank()) {
-                        continue;
-                    }
-                    String normalized = genre.trim().toLowerCase();
-                    raw.put(normalized, raw.getOrDefault(normalized, 0) + 1);
-                    total++;
-                }
-            }
-        }
-        Map<String, Double> result = new HashMap<>();
-        if (total == 0) {
-            return result;
-        }
-        for (Map.Entry<String, Integer> entry : raw.entrySet()) {
-            result.put(entry.getKey(), (entry.getValue() * 100.0) / total);
-        }
-        return result.entrySet()
-            .stream()
-            .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
-            .collect(HashMap::new, (m, e) -> m.put(e.getKey(), e.getValue()), HashMap::putAll);
+        return analyticsCalculator.genreDistribution(getTopTracks(userId));
     }
 
     public Map<String, Object> audioFeatureTrends(String userId) {
-        List<Track> tracks = topTracks.getOrDefault(userId, List.of());
-        double averageDuration = tracks.stream().mapToInt(Track::durationMs).average().orElse(0.0);
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("sampleSize", tracks.size());
-        payload.put("averageDurationMs", averageDuration);
-        payload.put("window", "all-time");
-        return payload;
+        return analyticsCalculator.audioFeatureTrends(getTopTracks(userId));
     }
 
     public double diversityScore(String userId) {
-        Map<String, Double> distribution = genreDistribution(userId);
-        if (distribution.isEmpty()) {
-            return 0.0;
+        return analyticsCalculator.diversityScore(genreDistribution(userId));
+    }
+
+    private void invalidateCache(String userId) {
+        try {
+            redisTemplate.delete("summary:" + userId);
+        } catch (Exception ignored) {
         }
-        List<Double> probabilities = new ArrayList<>();
-        for (double percent : distribution.values()) {
-            probabilities.add(percent / 100.0);
-        }
-        double entropy = 0.0;
-        for (double p : probabilities) {
-            entropy += -p * Math.log(p);
-        }
-        double normalized = entropy / Math.log(probabilities.size());
-        if (Double.isNaN(normalized)) {
-            return 0.0;
-        }
-        return Math.max(0.0, Math.min(1.0, normalized));
     }
 }

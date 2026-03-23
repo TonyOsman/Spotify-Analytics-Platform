@@ -3,11 +3,13 @@ name: platform-ci
 on:
   push:
     paths:
+      - "web-app/**"
       - "core-api/**"
       - "edge-api/**"
       - ".github/workflows/ci.yml"
   pull_request:
     paths:
+      - "web-app/**"
       - "core-api/**"
       - "edge-api/**"
       - ".github/workflows/ci.yml"
@@ -40,4 +42,23 @@ jobs:
         run: npm install
       - name: Build edge-api
         working-directory: edge-api
+        run: npm run build
+      - name: Test edge-api
+        working-directory: edge-api
+        run: npm run test
+
+  web-app-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web-app/package.json
+      - name: Install deps
+        working-directory: web-app
+        run: npm install
+      - name: Build web-app
+        working-directory: web-app
         run: npm run build
