@@ -23,7 +23,8 @@ export default function PlaylistsPage() {
 
   return (
     <div className="card">
-      <h2>Playlists</h2>
+      <h2>Playlists Overview</h2>
+      <p className="helper">Playlist data synchronized from the last successful job.</p>
       {status === "loading" && <div className="status loading">Loading playlists...</div>}
       {status === "error" && <div className="status error">{error}</div>}
       {status === "ok" && items !== null && <pre>{JSON.stringify(items, null, 2)}</pre>}

@@ -23,7 +23,8 @@ export default function AnalyticsPage() {
 
   return (
     <div className="card">
-      <h2>Analytics</h2>
+      <h2>Top Items Analytics</h2>
+      <p className="helper">Current range: medium. Type: tracks.</p>
       {status === "loading" && <div className="status loading">Loading analytics...</div>}
       {status === "error" && <div className="status error">{error}</div>}
       {status === "ok" && top !== null && <pre>{JSON.stringify(top, null, 2)}</pre>}

@@ -33,10 +33,11 @@ export default function IntegrationsPage() {
   return (
     <div className="card">
       <h2>Integrations</h2>
+      <p className="helper">Manage Spotify connection and token lifecycle via edge-api.</p>
       <div className="row">
-        <button onClick={connect}>Connect Spotify</button>
+        <button onClick={connect}>Connect Spotify Account</button>
         <button className="secondary" onClick={disconnect}>
-          Disconnect Spotify
+          Disconnect Account
         </button>
       </div>
       <div className="status ok">{status}</div>

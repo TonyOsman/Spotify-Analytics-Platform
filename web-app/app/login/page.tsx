@@ -36,12 +36,12 @@ export default function LoginPage() {
 
   return (
     <div className="card">
-      <h2>Login</h2>
-      <p>Session auth is handled by edge-api secure cookies.</p>
+      <h2>Session Access</h2>
+      <p className="helper">Use dev mode for local testing. OIDC is available when provider env vars are set.</p>
       <div className="row">
-        <button onClick={devLogin}>Dev Login</button>
+        <button onClick={devLogin}>Dev Login (Local)</button>
         <button className="secondary" onClick={oidcStart}>
-          OIDC Login
+          OIDC Login (Auth0/Okta)
         </button>
       </div>
       <div className="status ok">{status}</div>

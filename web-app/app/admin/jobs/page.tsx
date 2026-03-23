@@ -32,6 +32,7 @@ export default function AdminJobsPage() {
   return (
     <div className="card">
       <h2>Admin Jobs</h2>
+      <p className="helper">Queue and monitor Spotify synchronization jobs.</p>
       <div className="row">
         <button onClick={startSync}>Start Spotify Sync</button>
         <button className="secondary" onClick={readStatus}>

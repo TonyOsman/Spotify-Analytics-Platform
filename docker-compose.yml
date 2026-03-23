@@ -36,7 +36,7 @@ services:
       - PORT=3000
       - CORE_API_URL=http://core-api:8080
       - SESSION_SECRET=local-dev-session-secret
-      - SPOTIFY_CLIENT_ID=replace-me
+      - SPOTIFY_CLIENT_ID=4137aa09f0274e49b568ca39d9dfa4af
       - SPOTIFY_REDIRECT_URI=http://localhost:3000/auth/spotify/callback
       - OIDC_REDIRECT_URI=http://localhost:3000/auth/session/callback
     ports:

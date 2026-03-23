@@ -6,18 +6,28 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <div className="container">
-          <div className="card">
-            <div className="row">
-              <Link href="/login">Login</Link>
-              <Link href="/dashboard">Dashboard</Link>
-              <Link href="/analytics">Analytics</Link>
-              <Link href="/playlists">Playlists</Link>
-              <Link href="/settings/integrations">Integrations</Link>
-              <Link href="/admin/jobs">Admin Jobs</Link>
+        <div className="app-shell">
+          <aside className="sidebar">
+            <div className="brand">
+              <span className="brand-dot" />
+              Spotify Analytics
             </div>
-          </div>
-          {children}
+            <nav className="nav-group">
+              <Link className="nav-item" href="/login">Login</Link>
+              <Link className="nav-item" href="/dashboard">Dashboard</Link>
+              <Link className="nav-item" href="/analytics">Analytics</Link>
+              <Link className="nav-item" href="/playlists">Playlists</Link>
+              <Link className="nav-item" href="/settings/integrations">Integrations</Link>
+              <Link className="nav-item" href="/admin/jobs">Admin Jobs</Link>
+            </nav>
+          </aside>
+          <main className="main">
+            <div className="topbar">
+              <h1>Local Enterprise Console</h1>
+              <span className="pill">v2 local-first</span>
+            </div>
+            {children}
+          </main>
         </div>
       </body>
     </html>
