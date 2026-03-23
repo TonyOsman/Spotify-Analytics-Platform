@@ -5,7 +5,7 @@ import { edgeGet, edgePost } from "../../../lib/api";
 
 export default function AdminJobsPage() {
   const [status, setStatus] = useState("No sync running.");
-  const [job, setJob] = useState<unknown>(null);
+  const [job, setJob] = useState<Record<string, unknown> | null>(null);
 
   const startSync = async () => {
     setStatus("Sync queued...");
@@ -39,7 +39,7 @@ export default function AdminJobsPage() {
         </button>
       </div>
       <div className="status ok">{status}</div>
-      {job && <pre>{JSON.stringify(job, null, 2)}</pre>}
+      {job !== null && <pre>{JSON.stringify(job, null, 2)}</pre>}
     </div>
   );
 }
