@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String   @id @default(cuid())
+  spotifyId     String   @unique
+  email         String?
+  displayName   String?
+  imageUrl      String?
+  country       String?
+  isPremium     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  account            Account?
+  topTracks          TopTrack[]
+  topArtists         TopArtist[]
+  chatSessions       ChatSession[]
+  generatedPlaylists GeneratedPlaylist[]
+}
+
+model Account {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken  String   @db.Text
+  refreshToken String   @db.Text
+  expiresAt    Int
+  tokenType    String   @default("Bearer")
+  scope        String?
+}
+
+model TopTrack {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  spotifyId     String
+  name          String
+  artistNames   String
+  albumName     String?
+  albumImageUrl String?
+  durationMs    Int
+  previewUrl    String?
+  spotifyUri    String
+  genres        String   @default("[]")
+  timeRange     String
+  rank          Int
+  syncedAt      DateTime @default(now())
+
+  @@unique([userId, spotifyId, timeRange])
+  @@index([userId, timeRange])
+}
+
+model TopArtist {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  spotifyId  String
+  name       String
+  imageUrl   String?
+  genres     String   @default("[]")
+  popularity Int?
+  timeRange  String
+  rank       Int
+  syncedAt   DateTime @default(now())
+
+  @@unique([userId, spotifyId, timeRange])
+  @@index([userId, timeRange])
+}
+
+model ChatSession {
+  id        String        @id @default(cuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  messages  ChatMessage[]
+
+  @@index([userId])
+}
+
+model ChatMessage {
+  id        String      @id @default(cuid())
+  sessionId String
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role      String
+  content   String      @db.Text
+  metadata  String?     @db.Text
+  createdAt DateTime    @default(now())
+
+  @@index([sessionId])
+}
+
+model GeneratedPlaylist {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  spotifyPlaylistId String?
+  name              String
+  description       String?
+  prompt            String   @db.Text
+  trackUris         String   @db.Text
+  djIntro           String?  @db.Text
+  djTrackComments   String?  @db.Text
+  createdAt         DateTime @default(now())
+
+  @@index([userId])
+}
